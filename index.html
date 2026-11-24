@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Vocht Monitor — Dialyse &amp; Vochtbalans</title>
+  <meta name="theme-color" content="#0f766e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Vocht Monitor" />
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --surface-alt: #f8fafc;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --border: #e2e8f0;
+      --primary: #0f766e;
+      --primary-hover: #115e59;
+      --primary-soft: #ccfbf1;
+      --blue: #0284c7;
+      --blue-soft: #e0f2fe;
+      --green-bg: #dcfce7;
+      --green-text: #166534;
+      --green-border: #86efac;
+      --orange-bg: #ffedd5;
+      --orange-text: #9a3412;
+      --orange-border: #fdba74;
+      --red-bg: #fee2e2;
+      --red-text: #991b1b;
+      --red-border: #fca5a5;
+      --shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+      --radius: 16px;
+    }
+
+    body.dark {
+      --bg: #0b1120;
+      --surface: #1e293b;
+      --surface-alt: #162032;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --primary: #14b8a6;
+      --primary-hover: #0d9488;
+      --primary-soft: #134e4a;
+      --blue: #38bdf8;
+      --blue-soft: #0c4a6e;
+      --green-bg: #052e16;
+      --green-text: #86efac;
+      --green-border: #166534;
+      --orange-bg: #431407;
+      --orange-text: #fdba74;
+      --orange-border: #9a3412;
+      --red-bg: #450a0a;
+      --red-text: #fca5a5;
+      --red-border: #991b1b;
+      --shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: 88px;
+      line-height: 1.45;
+    }
+
+    header {
+      background: linear-gradient(135deg, #0f766e, #0d9488);
+      color: #ffffff;
+      padding: 16px 18px 14px;
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .app-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .app-title h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+
+    .app-subtitle {
+      font-size: 0.78rem;
+      opacity: 0.9;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.28);
+      color: #fff;
+      border-radius: 10px;
+      padding: 7px 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 14px;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    @media (max-width: 520px) {
+      .kpi-grid { grid-template-columns: 1fr; }
+    }
+
+    .kpi-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 13px;
+      box-shadow: var(--shadow);
+    }
+
+    .kpi-label {
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .kpi-val {
+      font-size: 1.35rem;
+      font-weight: 800;
+    }
+
+    .kpi-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    .progress-wrap {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      height: 16px;
+      overflow: hidden;
+      margin: 10px 0 6px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--primary);
+      width: 0%;
+      transition: width 0.25s ease, background 0.25s ease;
+    }
+
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .quick-btn {
+      background: var(--blue-soft);
+      color: var(--blue);
+      border: 1px solid rgba(2,132,199,0.25);
+      border-radius: 12px;
+      padding: 11px 6px;
+      font-weight: 800;
+      font-size: 0.92rem;
+      cursor: pointer;
+    }
+
+    .quick-btn:active { transform: scale(0.97); }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .form-row.single { grid-template-columns: 1fr; }
+    .form-row.triple { grid-template-columns: 1fr 1fr 1fr; }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface-alt);
+      color: var(--text);
+      font-size: 0.98rem;
+      font-family: inherit;
+    }
+
+    input:focus, select:focus {
+      outline: 2px solid var(--primary);
+      border-color: var(--primary);
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 0.98rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-primary:hover { background: var(--primary-hover); }
+
+    .btn-secondary {
+      background: var(--surface-alt);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      border: 1px solid transparent;
+    }
+
+    .status-green {
+      background: var(--green-bg);
+      color: var(--green-text);
+      border-color: var(--green-border);
+    }
+
+    .status-orange {
+      background: var(--orange-bg);
+      color: var(--orange-text);
+      border-color: var(--orange-border);
+    }
+
+    .status-red {
+      background: var(--red-bg);
+      color: var(--red-text);
+      border-color: var(--red-border);
+    }
+
+    .uf-preview {
+      border-radius: 14px;
+      padding: 14px;
+      margin: 12px 0;
+      border: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .uf-preview-val {
+      font-size: 1.5rem;
+      font-weight: 900;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface-alt);
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+
+    .toggle-row input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin: 0;
+    }
+
+    .list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .list-item:last-child { border-bottom: none; }
+
+    .del-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 8px;
+      padding: 5px 9px;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .del-btn:hover {
+      background: var(--red-bg);
+      color: var(--red-text);
+      border-color: var(--red-border);
+    }
+
+    .filter-pills {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .pill {
+      background: var(--surface-alt);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .pill.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      z-index: 40;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 9px 4px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .nav-btn span.nav-ico { font-size: 1.25rem; }
+    .nav-btn.active { color: var(--primary); }
+
+    .toast {
+      position: fixed;
+      top: 72px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f172a;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      z-index: 100;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .toast.show { opacity: 1; }
+    .muted { color: var(--text-muted); font-size: 0.84rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="app-title">
+      <div style="font-size:1.6rem;">💧</div>
+      <div>
+        <h1>Vocht Monitor</h1>
+        <div class="app-subtitle" id="headerDate">Vandaag</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="icon-btn" id="themeBtn" onclick="toggleTheme()">🌓 Thema</button>
+    </div>
+  </div>
+</header>
+
+<div id="toast" class="toast">Opgeslagen</div>
+
+<main>
+  <!-- TAB 1: OVERZICHT -->
+  <section id="tab-overzicht" class="tab-panel active">
+    <div class="kpi-grid">
+      <div class="kpi-box">
+        <div class="kpi-label">Vocht Vandaag</div>
+        <div class="kpi-val" id="kpiFluid">0 / 1000 ml</div>
+        <div class="kpi-sub" id="kpiFluidSub">Nog 1000 ml over</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">Laatste UF Advies</div>
+        <div class="kpi-val" id="kpiUf">— L</div>
+        <div class="kpi-sub" id="kpiUfSub">Nog geen dialyse ingevoerd</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">Laatste Bloeddruk</div>
+        <div class="kpi-val" id="kpiBp">— / —</div>
+        <div class="kpi-sub" id="kpiBpSub">Nog geen meting</div>
+      </div>
+    </div>
+
+    <!-- Instellingen & UF Kleurcodering direct in overzicht -->
+    <div class="card">
+      <h2>
+        <span>⚙️ Instellingen &amp; UF-Kleurcodering</span>
+        <span class="badge status-green" id="ufRuleSummary">Groen &lt; 4,0 | Oranje ≥ 4,0 | Rood ≥ 4,5</span>
+      </h2>
+      <div class="form-row">
+        <div>
+          <label for="cfgDryWeight">Drooggewicht (kg)</label>
+          <input type="number" step="0.1" id="cfgDryWeight" value="109.0" onchange="saveSettings()" />
+        </div>
+        <div>
+          <label for="cfgFluidLimit">Dagelijks vochtlimiet (ml)</label>
+          <input type="number" step="50" id="cfgFluidLimit" value="1000" onchange="saveSettings()" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label for="cfgUfOrange">Grens Oranje (vanaf L)</label>
+          <input type="number" step="0.1" id="cfgUfOrange" value="4.0" onchange="saveSettings()" />
+        </div>
+        <div>
+          <label for="cfgUfRed">Grens Rood (vanaf L)</label>
+          <input type="number" step="0.1" id="cfgUfRed" value="4.5" onchange="saveSettings()" />
+        </div>
+      </div>
+      <div class="muted">
+        Formule UF-advies: <strong>(Voorgewicht − Drooggewicht) + 0,3 L</strong>. Aanpassingen herberekenen direct al je metingen.
+      </div>
+    </div>
+
+    <!-- Tijdlijn & Export -->
+    <div class="card">
+      <h2>
+        <span>📋 Recente Metingen &amp; Export</span>
+      </h2>
+      <div class="filter-pills">
+        <button type="button" class="pill active" onclick="setFilter('all', this)">Alles</button>
+        <button type="button" class="pill" onclick="setFilter('fluid', this)">💧 Vocht</button>
+        <button type="button" class="pill" onclick="setFilter('dialysis', this)">🩺 Dialyse</button>
+        <button type="button" class="pill" onclick="setFilter('bp', this)">❤️ Bloeddruk</button>
+      </div>
+      <div id="timelineList"></div>
+      <div style="display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;">
+        <button type="button" class="btn-secondary" onclick="exportCSV()">📥 Download CSV</button>
+        <button type="button" class="btn-secondary" onclick="copyReport()">📋 Kopieer voor Arts</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 2: VOCHT -->
+  <section id="tab-vocht" class="tab-panel">
+    <div class="card">
+      <h2>
+        <span>💧 Vochtinname Vandaag</span>
+        <span id="fluidBadge" class="badge status-green">0%</span>
+      </h2>
+      <div style="display:flex; justify-content:space-between; font-weight:700; font-size:0.95rem;">
+        <span id="fluidTotalText">0 ml gedronken</span>
+        <span id="fluidTargetText">Doel: 1000 ml</span>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-bar" id="fluidBar"></div>
+      </div>
+      <div class="muted" id="fluidRemainText" style="margin-bottom:14px;">Nog 1000 ml ruimte over vandaag.</div>
+
+      <label>Snel toevoegen</label>
+      <div class="quick-grid">
+        <button type="button" class="quick-btn" onclick="addFluid(100, 'Glas / Kopje')">+100 ml</button>
+        <button type="button" class="quick-btn" onclick="addFluid(150, 'Koffie / Thee')">+150 ml</button>
+        <button type="button" class="quick-btn" onclick="addFluid(200, 'Mok / Glas')">+200 ml</button>
+        <button type="button" class="quick-btn" onclick="addFluid(250, 'Groot glas')">+250 ml</button>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label for="customFluidMl">Eigen hoeveelheid (ml)</label>
+          <input type="number" id="customFluidMl" placeholder="bijv. 125" />
+        </div>
+        <div>
+          <label for="customFluidNote">Omschrijving (optioneel)</label>
+          <input type="text" id="customFluidNote" placeholder="bijv. Water, soep, fruit" />
+        </div>
+      </div>
+      <button type="button" class="btn-primary" onclick="addCustomFluid()">+ Vocht Opslaan</button>
+    </div>
+
+    <div class="card">
+      <h2>Vandaag gedronken</h2>
+      <div id="todayFluidList"></div>
+    </div>
+  </section>
+
+  <!-- TAB 3: DIALYSE & GEWICHT -->
+  <section id="tab-dialyse" class="tab-panel">
+    <div class="card">
+      <h2>🩺 Dialyse &amp; UF-Advies Berekenen</h2>
+
+      <label class="toggle-row" for="nightDialysis">
+        <input type="checkbox" id="nightDialysis" checked onchange="toggleNightDates()" />
+        <span><strong>Nachtdialyse</strong> (startdatum én einddatum vastleggen)</span>
+      </label>
+
+      <div class="form-row" id="dialysisDateRow">
+        <div>
+          <label for="dialStartDate" id="lblStartDate">Startdatum dialyse</label>
+          <input type="date" id="dialStartDate" />
+        </div>
+        <div id="endDateCol">
+          <label for="dialEndDate">Einddatum dialyse (ochtend)</label>
+          <input type="date" id="dialEndDate" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label for="preWeight">Voorgewicht (kg)</label>
+          <input type="number" step="0.1" id="preWeight" placeholder="bijv. 112.8" oninput="updateUfPreview()" />
+        </div>
+        <div>
+          <label for="postWeight">Nagwicht na dialyse (kg, optioneel)</label>
+          <input type="number" step="0.1" id="postWeight" placeholder="bijv. 109.1" />
+        </div>
+      </div>
+
+      <div class="uf-preview status-green" id="ufPreviewBox">
+        <div>
+          <div style="font-size:0.8rem; font-weight:700; opacity:0.85;">Berekend UF-advies</div>
+          <div class="uf-preview-val" id="ufPreviewVal">0.0 L</div>
+          <div style="font-size:0.78rem;" id="ufFormulaInfo">Vul je voorgewicht in</div>
+        </div>
+        <span class="badge status-green" id="ufPreviewBadge">Klaar</span>
+      </div>
+
+      <button type="button" class="btn-primary" onclick="saveDialysis()">💾 Dialyse Sessie Opslaan</button>
+    </div>
+
+    <div class="card">
+      <h2>Recente Dialysesessies</h2>
+      <div id="dialysisHistoryList"></div>
+    </div>
+  </section>
+
+  <!-- TAB 4: BLOEDDRUK -->
+  <section id="tab-bloeddruk" class="tab-panel">
+    <div class="card">
+      <h2>❤️ Bloeddruk &amp; Hartslag Meten</h2>
+      <div class="form-row triple">
+        <div>
+          <label for="bpSys">Bovendruk (Sys)</label>
+          <input type="number" id="bpSys" placeholder="130" />
+        </div>
+        <div>
+          <label for="bpDia">Onderdruk (Dia)</label>
+          <input type="number" id="bpDia" placeholder="80" />
+        </div>
+        <div>
+          <label for="bpPulse">Hartslag (bpm)</label>
+          <input type="number" id="bpPulse" placeholder="72" />
+        </div>
+      </div>
+      <div class="form-row single">
+        <div>
+          <label for="bpMoment">Meetmoment</label>
+          <select id="bpMoment">
+            <option value="Voor dialyse">Voor dialyse</option>
+            <option value="Tijdens dialyse">Tijdens dialyse</option>
+            <option value="Na dialyse">Na dialyse</option>
+            <option value="Thuis / Rust">Thuis / Rust</option>
+          </select>
+        </div>
+      </div>
+      <button type="button" class="btn-primary" onclick="saveBp()">💾 Bloeddruk Opslaan</button>
+
+      <div style="margin-top:12px; padding:10px 12px; border-radius:10px; background:var(--surface-alt); border:1px solid var(--border); font-size:0.8rem;">
+        <strong>Kleurzones voor dialysepatiënten:</strong><br />
+        🟢 <strong>Groen (Streefwaarde):</strong> 100–139 / 60–89 mmHg, hartslag 55–95<br />
+        🟠 <strong>Oranje (Let op):</strong> 90–99 of 140–159 / 90–99 mmHg, of hartslag &lt;55 / &gt;95<br />
+        🔴 <strong>Rood (Waarschuwing):</strong> &lt;90 (lage bloeddruk/duizeligheid) of ≥160 / ≥100 mmHg
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Recente Bloeddrukmetingen</h2>
+      <div id="bpHistoryList"></div>
+    </div>
+  </section>
+</main>
+
+<nav class="bottom-nav">
+  <button type="button" class="nav-btn active" onclick="switchTab('overzicht', this)">
+    <span class="nav-ico">📊</span>
+    <span>Overzicht</span>
+  </button>
+  <button type="button" class="nav-btn" onclick="switchTab('vocht', this)">
+    <span class="nav-ico">💧</span>
+    <span>Vocht</span>
+  </button>
+  <button type="button" class="nav-btn" onclick="switchTab('dialyse', this)">
+    <span class="nav-ico">🩺</span>
+    <span>Dialyse</span>
+  </button>
+  <button type="button" class="nav-btn" onclick="switchTab('bloeddruk', this)">
+    <span class="nav-ico">❤️</span>
+    <span>Bloeddruk</span>
+  </button>
+</nav>
+
+<script>
+  const STORAGE_KEY = 'vocht_monitor_pwa_v2';
+
+  const defaultState = {
+    settings: {
+      dryWeight: 109.0,
+      fluidLimit: 1000,
+      ufOrange: 4.0,
+      ufRed: 4.5,
+      darkMode: false
+    },
+    fluids: [],
+    dialyses: [],
+    bps: []
+  };
+
+  let state = loadState();
+  let currentFilter = 'all';
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return JSON.parse(JSON.stringify(defaultState));
+      const parsed = JSON.parse(raw);
+      return {
+        settings: Object.assign({}, defaultState.settings, parsed.settings || {}),
+        fluids: Array.isArray(parsed.fluids) ? parsed.fluids : [],
+        dialyses: Array.isArray(parsed.dialyses) ? parsed.dialyses : [],
+        bps: Array.isArray(parsed.bps) ? parsed.bps : []
+      };
+    } catch (e) {
+      return JSON.parse(JSON.stringify(defaultState));
+    }
+  }
+
+  function persist() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+      console.warn('Opslaan in localStorage mislukt:', e);
+    }
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  function todayStr() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function tomorrowStr() {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function formatDateNL(isoDate) {
+    if (!isoDate) return '';
+    const parts = isoDate.split('-');
+    if (parts.length !== 3) return isoDate;
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  }
+
+  function switchTab(tabId, btnEl) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tabId).classList.add('active');
+    if (btnEl) btnEl.classList.add('active');
+    renderAll();
+  }
+
+  function toggleTheme() {
+    state.settings.darkMode = !state.settings.darkMode;
+    document.body.classList.toggle('dark', state.settings.darkMode);
+    persist();
+  }
+
+  function saveSettings() {
+    const dw = parseFloat(document.getElementById('cfgDryWeight').value);
+    const fl = parseInt(document.getElementById('cfgFluidLimit').value, 10);
+    const uo = parseFloat(document.getElementById('cfgUfOrange').value);
+    const ur = parseFloat(document.getElementById('cfgUfRed').value);
+
+    if (!isNaN(dw) && dw > 0) state.settings.dryWeight = dw;
+    if (!isNaN(fl) && fl > 0) state.settings.fluidLimit = fl;
+    if (!isNaN(uo) && uo >= 0) state.settings.ufOrange = uo;
+    if (!isNaN(ur) && ur >= 0) state.settings.ufRed = ur;
+
+    persist();
+    updateUfPreview();
+    renderAll();
+    showToast('Instellingen & UF-codering opgeslagen');
+  }
+
+  function getUfStatus(ufVal) {
+    const orange = Number(state.settings.ufOrange);
+    const red = Number(state.settings.ufRed);
+    if (ufVal >= red) {
+      return { cls: 'status-red', label: 'Hoog (Rood)' };
+    }
+    if (ufVal >= orange) {
+      return { cls: 'status-orange', label: 'Let op (Oranje)' };
+    }
+    return { cls: 'status-green', label: 'Goed (Groen)' };
+  }
+
+  function calcUf(preWeight) {
+    const dw = Number(state.settings.dryWeight) || 109.0;
+    const raw = (preWeight - dw) + 0.3;
+    return Math.max(0, Math.round(raw * 10) / 10);
+  }
+
+  function getBpStatus(sys, dia, pulse) {
+    if (sys < 90 || sys >= 160 || dia >= 100 || (pulse && (pulse < 45 || pulse > 115))) {
+      return { cls: 'status-red', label: sys < 90 ? 'Te laag (Rood)' : 'Hoog (Rood)' };
+    }
+    if (sys < 100 || sys >= 140 || dia >= 90 || (pulse && (pulse < 55 || pulse > 95))) {
+      return { cls: 'status-orange', label: 'Aandacht (Oranje)' };
+    }
+    return { cls: 'status-green', label: 'Streefwaarde (Groen)' };
+  }
+
+  // VOCHT FUNCTIES
+  function addFluid(ml, note) {
+    const now = new Date();
+    const timeStr = now.toTimeString().slice(0, 5);
+    state.fluids.unshift({
+      id: Date.now() + Math.random(),
+      date: todayStr(),
+      time: timeStr,
+      ml: Number(ml),
+      note: note || 'Drinken'
+    });
+    persist();
+    renderAll();
+    showToast(`+${ml} ml opgeslagen`);
+  }
+
+  function addCustomFluid() {
+    const mlInput = document.getElementById('customFluidMl');
+    const noteInput = document.getElementById('customFluidNote');
+    const ml = parseInt(mlInput.value, 10);
+    if (isNaN(ml) || ml <= 0) {
+      showToast('Vul een geldig aantal ml in');
+      return;
+    }
+    addFluid(ml, noteInput.value.trim() || 'Vocht');
+    mlInput.value = '';
+    noteInput.value = '';
+  }
+
+  function deleteFluid(id) {
+    state.fluids = state.fluids.filter(f => f.id !== id);
+    persist();
+    renderAll();
+    showToast('Vocht-item verwijderd');
+  }
+
+  // DIALYSE FUNCTIES
+  function toggleNightDates() {
+    const isNight = document.getElementById('nightDialysis').checked;
+    document.getElementById('endDateCol').style.display = isNight ? 'block' : 'none';
+    document.getElementById('lblStartDate').textContent = isNight ? 'Startdatum dialyse' : 'Datum dialyse';
+  }
+
+  function updateUfPreview() {
+    const pre = parseFloat(document.getElementById('preWeight').value);
+    const box = document.getElementById('ufPreviewBox');
+    const valEl = document.getElementById('ufPreviewVal');
+    const infoEl = document.getElementById('ufFormulaInfo');
+    const badgeEl = document.getElementById('ufPreviewBadge');
+
+    box.classList.remove('status-green', 'status-orange', 'status-red');
+    badgeEl.classList.remove('status-green', 'status-orange', 'status-red');
+
+    if (isNaN(pre) || pre <= 0) {
+      valEl.textContent = '0.0 L';
+      infoEl.textContent = `Drooggewicht: ${state.settings.dryWeight.toFixed(1)} kg (+ 0,3 L)`;
+      box.classList.add('status-green');
+      badgeEl.classList.add('status-green');
+      badgeEl.textContent = 'Klaar';
+      return;
+    }
+
+    const uf = calcUf(pre);
+    const st = getUfStatus(uf);
+    valEl.textContent = `${uf.toFixed(1)} L`;
+    infoEl.textContent = `(${pre.toFixed(1)} − ${state.settings.dryWeight.toFixed(1)}) + 0,3 L`;
+    box.classList.add(st.cls);
+    badgeEl.classList.add(st.cls);
+    badgeEl.textContent = st.label;
+  }
+
+  function saveDialysis() {
+    const pre = parseFloat(document.getElementById('preWeight').value);
+    const post = parseFloat(document.getElementById('postWeight').value);
+    const isNight = document.getElementById('nightDialysis').checked;
+    const startDate = document.getElementById('dialStartDate').value || todayStr();
+    const endDate = isNight ? (document.getElementById('dialEndDate').value || tomorrowStr()) : startDate;
+
+    if (isNaN(pre) || pre <= 0) {
+      showToast('Vul eerst je voorgewicht in');
+      return;
+    }
+
+    const uf = calcUf(pre);
+    state.dialyses.unshift({
+      id: Date.now() + Math.random(),
+      isNight: isNight,
+      startDate: startDate,
+      endDate: endDate,
+      preWeight: pre,
+      postWeight: isNaN(post) ? null : post,
+      dryWeightAtTime: state.settings.dryWeight,
+      ufAdvice: uf
+    });
+
+    persist();
+    document.getElementById('preWeight').value = '';
+    document.getElementById('postWeight').value = '';
+    updateUfPreview();
+    renderAll();
+    showToast('Dialyse sessie opgeslagen');
+  }
+
+  function deleteDialysis(id) {
+    state.dialyses = state.dialyses.filter(d => d.id !== id);
+    persist();
+    renderAll();
+    showToast('Dialyse verwijderd');
+  }
+
+  // BLOEDDRUK FUNCTIES
+  function saveBp() {
+    const sys = parseInt(document.getElementById('bpSys').value, 10);
+    const dia = parseInt(document.getElementById('bpDia').value, 10);
+    const pulse = parseInt(document.getElementById('bpPulse').value, 10);
+    const moment = document.getElementById('bpMoment').value;
+
+    if (isNaN(sys) || isNaN(dia) || sys <= 0 || dia <= 0) {
+      showToast('Vul bovendruk en onderdruk in');
+      return;
+    }
+
+    const now = new Date();
+    state.bps.unshift({
+      id: Date.now() + Math.random(),
+      date: todayStr(),
+      time: now.toTimeString().slice(0, 5),
+      sys: sys,
+      dia: dia,
+      pulse: isNaN(pulse) ? null : pulse,
+      moment: moment
+    });
+
+    persist();
+    document.getElementById('bpSys').value = '';
+    document.getElementById('bpDia').value = '';
+    document.getElementById('bpPulse').value = '';
+    renderAll();
+    showToast('Bloeddruk opgeslagen');
+  }
+
+  function deleteBp(id) {
+    state.bps = state.bps.filter(b => b.id !== id);
+    persist();
+    renderAll();
+    showToast('Bloeddrukmeting verwijderd');
+  }
+
+  // FILTER & TIJDLIJN
+  function setFilter(filter, btnEl) {
+    currentFilter = filter;
+    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    if (btnEl) btnEl.classList.add('active');
+    renderTimeline();
+  }
+
+  function renderTimeline() {
+    const container = document.getElementById('timelineList');
+    let items = [];
+
+    if (currentFilter === 'all' || currentFilter === 'fluid') {
+      state.fluids.forEach(f => {
+        items.push({
+          ts: f.id,
+          html: `
+            <div class="list-item">
+              <div>
+                <strong>💧 +${f.ml} ml</strong> <span class="muted">(${f.note})</span>
+                <div class="muted">${formatDateNL(f.date)} om ${f.time}</div>
+              </div>
+              <button type="button" class="del-btn" onclick="deleteFluid(${f.id})">Wis</button>
+            </div>`
+        });
+      });
+    }
+
+    if (currentFilter === 'all' || currentFilter === 'dialysis') {
+      state.dialyses.forEach(d => {
+        const uf = calcUf(d.preWeight);
+        const st = getUfStatus(uf);
+        const dateLabel = d.isNight && d.endDate !== d.startDate
+          ? `Nacht: ${formatDateNL(d.startDate)} → ${formatDateNL(d.endDate)}`
+          : formatDateNL(d.startDate);
+        const postTxt = d.postWeight ? ` | Na: ${d.postWeight.toFixed(1)} kg` : '';
+        items.push({
+          ts: d.id,
+          html: `
+            <div class="list-item">
+              <div>
+                <strong>🩺 Voor: ${d.preWeight.toFixed(1)} kg${postTxt}</strong>
+                <div class="muted">${dateLabel}</div>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span class="badge ${st.cls}">UF ${uf.toFixed(1)} L</span>
+                <button type="button" class="del-btn" onclick="deleteDialysis(${d.id})">Wis</button>
+              </div>
+            </div>`
+        });
+      });
+    }
+
+    if (currentFilter === 'all' || currentFilter === 'bp') {
+      state.bps.forEach(b => {
+        const st = getBpStatus(b.sys, b.dia, b.pulse);
+        const pulseTxt = b.pulse ? ` • ❤️ ${b.pulse} bpm` : '';
+        items.push({
+          ts: b.id,
+          html: `
+            <div class="list-item">
+              <div>
+                <strong>❤️ ${b.sys}/${b.dia} mmHg${pulseTxt}</strong>
+                <div class="muted">${formatDateNL(b.date)} ${b.time} (${b.moment})</div>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span class="badge ${st.cls}">${st.label.split(' ')[0]}</span>
+                <button type="button" class="del-btn" onclick="deleteBp(${b.id})">Wis</button>
+              </div>
+            </div>`
+        });
+      });
+    }
+
+    items.sort((a, b) => b.ts - a.ts);
+    if (items.length === 0) {
+      container.innerHTML = '<div class="muted" style="padding:10px 0;">Nog geen metingen in deze categorie.</div>';
+    } else {
+      container.innerHTML = items.slice(0, 30).map(i => i.html).join('');
+    }
+  }
+
+  function renderAll() {
+    // Sync inputs
+    document.getElementById('cfgDryWeight').value = state.settings.dryWeight;
+    document.getElementById('cfgFluidLimit').value = state.settings.fluidLimit;
+    document.getElementById('cfgUfOrange').value = state.settings.ufOrange;
+    document.getElementById('cfgUfRed').value = state.settings.ufRed;
+    document.getElementById('ufRuleSummary').textContent =
+      `Groen < ${Number(state.settings.ufOrange).toFixed(1)} | Oranje ≥ ${Number(state.settings.ufOrange).toFixed(1)} | Rood ≥ ${Number(state.settings.ufRed).toFixed(1)}`;
+
+    // Vocht vandaag
+    const today = todayStr();
+    const todayFluids = state.fluids.filter(f => f.date === today);
+    const totalMl = todayFluids.reduce((acc, f) => acc + Number(f.ml), 0);
+    const limit = Number(state.settings.fluidLimit) || 1000;
+    const pct = Math.round((totalMl / limit) * 100);
+    const remain = limit - totalMl;
+
+    document.getElementById('kpiFluid').textContent = `${totalMl} / ${limit} ml`;
+    document.getElementById('kpiFluidSub').textContent = remain >= 0 ? `Nog ${remain} ml over` : `${Math.abs(remain)} ml over limiet`;
+
+    document.getElementById('fluidTotalText').textContent = `${totalMl} ml gedronken`;
+    document.getElementById('fluidTargetText').textContent = `Doel: ${limit} ml`;
+    const bar = document.getElementById('fluidBar');
+    bar.style.width = Math.min(100, pct) + '%';
+    bar.style.background = pct >= 100 ? '#dc2626' : (pct >= 85 ? '#ea580c' : 'var(--primary)');
+
+    const fBadge = document.getElementById('fluidBadge');
+    fBadge.textContent = `${pct}%`;
+    fBadge.className = 'badge ' + (pct >= 100 ? 'status-red' : (pct >= 85 ? 'status-orange' : 'status-green'));
+    document.getElementById('fluidRemainText').textContent = remain >= 0
+      ? `Nog ${remain} ml ruimte over vandaag.`
+      : `Let op: ${Math.abs(remain)} ml boven je daglimiet.`;
+
+    const todayFluidList = document.getElementById('todayFluidList');
+    if (todayFluids.length === 0) {
+      todayFluidList.innerHTML = '<div class="muted">Vandaag nog niets ingevoerd.</div>';
+    } else {
+      todayFluidList.innerHTML = todayFluids.map(f => `
+        <div class="list-item">
+          <div><strong>+${f.ml} ml</strong> — ${f.note} <span class="muted">(${f.time})</span></div>
+          <button type="button" class="del-btn" onclick="deleteFluid(${f.id})">Wis</button>
+        </div>
+      `).join('');
+    }
+
+    // Laatste dialyse KPI + lijst
+    const dialList = document.getElementById('dialysisHistoryList');
+    if (state.dialyses.length === 0) {
+      document.getElementById('kpiUf').textContent = '— L';
+      document.getElementById('kpiUfSub').textContent = 'Nog geen dialyse';
+      dialList.innerHTML = '<div class="muted">Nog geen dialysesessies opgeslagen.</div>';
+    } else {
+      const latest = state.dialyses[0];
+      const latestUf = calcUf(latest.preWeight);
+      const st = getUfStatus(latestUf);
+      document.getElementById('kpiUf').textContent = `${latestUf.toFixed(1)} L`;
+      document.getElementById('kpiUfSub').innerHTML = `<span class="badge ${st.cls}">${st.label}</span>`;
+
+      dialList.innerHTML = state.dialyses.slice(0, 15).map(d => {
+        const uf = calcUf(d.preWeight);
+        const dst = getUfStatus(uf);
+        const dLabel = d.isNight && d.endDate !== d.startDate
+          ? `Nacht: ${formatDateNL(d.startDate)} → ${formatDateNL(d.endDate)}`
+          : formatDateNL(d.startDate);
+        return `
+          <div class="list-item">
+            <div>
+              <strong>Voor: ${d.preWeight.toFixed(1)} kg</strong> ${d.postWeight ? `→ Na: ${d.postWeight.toFixed(1)} kg` : ''}
+              <div class="muted">${dLabel}</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span class="badge ${dst.cls}">UF ${uf.toFixed(1)} L</span>
+              <button type="button" class="del-btn" onclick="deleteDialysis(${d.id})">Wis</button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // Laatste bloeddruk KPI + lijst
+    const bpList = document.getElementById('bpHistoryList');
+    if (state.bps.length === 0) {
+      document.getElementById('kpiBp').textContent = '— / —';
+      document.getElementById('kpiBpSub').textContent = 'Nog geen meting';
+      bpList.innerHTML = '<div class="muted">Nog geen bloeddrukmetingen opgeslagen.</div>';
+    } else {
+      const lb = state.bps[0];
+      const bst = getBpStatus(lb.sys, lb.dia, lb.pulse);
+      document.getElementById('kpiBp').textContent = `${lb.sys}/${lb.dia}`;
+      document.getElementById('kpiBpSub').innerHTML = `<span class="badge ${bst.cls}">${bst.label}</span>`;
+
+      bpList.innerHTML = state.bps.slice(0, 15).map(b => {
+        const st = getBpStatus(b.sys, b.dia, b.pulse);
+        return `
+          <div class="list-item">
+            <div>
+              <strong>${b.sys}/${b.dia} mmHg</strong> ${b.pulse ? `(${b.pulse} bpm)` : ''}
+              <div class="muted">${formatDateNL(b.date)} ${b.time} — ${b.moment}</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span class="badge ${st.cls}">${st.label.split(' ')[0]}</span>
+              <button type="button" class="del-btn" onclick="deleteBp(${b.id})">Wis</button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    renderTimeline();
+  }
+
+  function exportCSV() {
+    let rows = ['Type,Datum,Einddatum_of_Tijd,Waarde1,Waarde2,Waarde3,Status'];
+    state.fluids.forEach(f => {
+      rows.push(`Vocht,${f.date},${f.time},${f.ml} ml,"${f.note}",,`);
+    });
+    state.dialyses.forEach(d => {
+      const uf = calcUf(d.preWeight);
+      rows.push(`Dialyse,${d.startDate},${d.endDate},Voor: ${d.preWeight} kg,Na: ${d.postWeight || '-'} kg,UF: ${uf} L,${getUfStatus(uf).label}`);
+    });
+    state.bps.forEach(b => {
+      rows.push(`Bloeddruk,${b.date},${b.time},${b.sys}/${b.dia} mmHg,Hartslag: ${b.pulse || '-'},${b.moment},${getBpStatus(b.sys, b.dia, b.pulse).label}`);
+    });
+
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vocht-monitor-${todayStr()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('CSV-bestand gedownload');
+  }
+
+  function copyReport() {
+    const lines = [
+      `VOCHT MONITOR OVERZICHT (${formatDateNL(todayStr())})`,
+      `Drooggewicht: ${state.settings.dryWeight} kg | Vochtlimiet: ${state.settings.fluidLimit} ml`,
+      ''
+    ];
+    if (state.dialyses.length > 0) {
+      lines.push('--- LAATSTE DIALYSES ---');
+      state.dialyses.slice(0, 5).forEach(d => {
+        const uf = calcUf(d.preWeight);
+        lines.push(`${formatDateNL(d.startDate)}${d.isNight ? ' -> ' + formatDateNL(d.endDate) : ''}: Voor ${d.preWeight} kg, UF-advies ${uf} L`);
+      });
+      lines.push('');
+    }
+    if (state.bps.length > 0) {
+      lines.push('--- LAATSTE BLOEDDRUKKEN ---');
+      state.bps.slice(0, 5).forEach(b => {
+        lines.push(`${formatDateNL(b.date)} ${b.time} (${b.moment}): ${b.sys}/${b.dia} mmHg${b.pulse ? ', pols ' + b.pulse : ''}`);
+      });
+    }
+    const text = lines.join('\n');
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => showToast('Overzicht gekopieerd!'));
+    } else {
+      alert(text);
+    }
+  }
+
+  // PWA Manifest & Service Worker registratie (veilig zonder vastlopen)
+  (function initPWA() {
+    try {
+      const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="110" fill="#0f766e"/><path d="M256 96C256 96 144 226 144 312C144 373.8 194.2 424 256 424C317.8 424 368 373.8 368 312C368 226 256 96 256 96Z" fill="#ffffff"/></svg>`;
+      const iconUrl = 'data:image/svg+xml;base64,' + btoa(iconSvg);
+      const manifest = {
+        name: 'Vocht Monitor',
+        short_name: 'VochtMonitor',
+        start_url: './',
+        display: 'standalone',
+        background_color: '#f1f5f9',
+        theme_color: '#0f766e',
+        icons: [{ src: iconUrl, sizes: '512x512', type: 'image/svg+xml' }]
+      };
+      const mBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+      const link = document.createElement('link');
+      link.rel = 'manifest';
+      link.href = URL.createObjectURL(mBlob);
+      document.head.appendChild(link);
+    } catch (e) {}
+  })();
+
+  // Initialisatie bij opstarten
+  document.addEventListener('DOMContentLoaded', () => {
+    if (state.settings.darkMode) document.body.classList.add('dark');
+    document.getElementById('headerDate').textContent = formatDateNL(todayStr());
+    document.getElementById('dialStartDate').value = todayStr();
+    document.getElementById('dialEndDate').value = tomorrowStr();
+    toggleNightDates();
+    updateUfPreview();
+    renderAll();
+  });
+</script>
+</body>
+</html>
